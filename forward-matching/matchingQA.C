@@ -79,7 +79,7 @@ void MatchRankingCompareMatchingMethods(TFile* rootFile,
 {
   TH1* h1;
   TH2* h2;
-  TLegend* legend = new TLegend(0.6, 0.6, 0.9, 0.9);
+  TLegend* legend = new TLegend(0.6, 0.7, 0.9, 0.9);
 
   // same particle in MFT and MCH
   legend->Clear();
@@ -98,6 +98,7 @@ void MatchRankingCompareMatchingMethods(TFile* rootFile,
     h1->Scale(1.0 / h1->Integral());
     if (index == 0) {
       h1->Draw("HIST");
+      h1->SetMinimum(1.e-4);
       h1->SetMaximum(1.0);
     } else
       h1->Draw("same");
@@ -107,15 +108,31 @@ void MatchRankingCompareMatchingMethods(TFile* rootFile,
   legend->Draw();
   c.SaveAs("matchingQA.pdf");
 
-  legend->SetY1NDC(0.2);
-  legend->SetY2NDC(0.5);
-  std::vector<std::string> variables{
-    "P", "Pt", "McParticleDz", "MftTrackMult", "MftTrackType", "DeltaChi2"};
+  std::vector<std::string> variables{"P", "Pt", "McParticleDz", "MftTrackMult", "MftTrackType", "DeltaChi2"};
+  for (auto variable : variables) {
+    legend->Clear();
+    c.Clear();
+    c.SetLogy(kTRUE);
+
+    legend->SetY1NDC(0.15);
+    legend->SetY2NDC(0.35);
+    int index = 0;
+    auto method = matchingMethods[0];
+    std::string path = std::string("qa-matching/matching/MC/") + method + "/";
+    h2 = GetTH2(rootFile, (path + histName + "Vs" + variable).c_str());
+    TH1* proj = (TH1*)h2->ProjectionX();
+    proj->Draw("HIST");
+    c.SaveAs("matchingQA.pdf");
+    delete proj;
+  }
+
   for (auto variable : variables) {
     legend->Clear();
     c.Clear();
     c.SetLogy(kFALSE);
 
+    legend->SetY1NDC(0.15);
+    legend->SetY2NDC(0.35);
     int index = 0;
     for (auto method : matchingMethods) {
       std::string path = std::string("qa-matching/matching/MC/") + method + "/";
@@ -138,6 +155,8 @@ void MatchRankingCompareMatchingMethods(TFile* rootFile,
     legend->Draw();
     c.SaveAs("matchingQA.pdf");
 
+    legend->SetY1NDC(0.65);
+    legend->SetY2NDC(0.85);
     index = 0;
     for (auto method : matchingMethods) {
       std::string path = std::string("qa-matching/matching/MC/") + method + "/";
@@ -148,7 +167,7 @@ void MatchRankingCompareMatchingMethods(TFile* rootFile,
         h1->Draw();
       else
         h1->Draw("same");
-      legend->AddEntry(h1, method.c_str(), "l");
+      //legend->AddEntry(h1, method.c_str(), "l");
       index += 1;
     }
     legend->Draw();
