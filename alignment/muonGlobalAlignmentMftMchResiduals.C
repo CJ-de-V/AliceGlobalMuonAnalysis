@@ -1383,6 +1383,10 @@ void muonGlobalAlignmentMftMchResiduals(const char* _rootFileName = "AnalysisRes
     int deMax = deMin + getNumDEinChamber(chIndex);
     histDyVsDE[0]->GetXaxis()->SetRangeUser(deMin, deMax);
     histDyVsDE[0]->SetTitle((histTitle + "(CH" + std::to_string(chIndex+1) + ")").c_str());
+    histDyVsDE[0]->SetMinimum(-5.0);
+    histDyVsDE[0]->SetMaximum(5.0);
+    c.SaveAs(pdfFileName.c_str());
+
     histDyVsDE[0]->SetMinimum(-1.0);
     histDyVsDE[0]->SetMaximum(1.0);
     c.SaveAs(pdfFileName.c_str());
@@ -1401,7 +1405,7 @@ void muonGlobalAlignmentMftMchResiduals(const char* _rootFileName = "AnalysisRes
   //   std::array<std::vector<std::array<TH1*, 2>>, 2> hDEResiduals;
   hn->GetAxis(1)->SetRange(1, hn->GetAxis(1)->GetNbins());
   for (const auto& group : deGroups) {
-    hDEResiduals[0].emplace_back(std::array<TH1*, 2>{nullptr, nullptr});
+    hDEResiduals[1].emplace_back(std::array<TH1*, 2>{nullptr, nullptr});
     // loop over charge sign
     for (int charge = 0; charge < 2; charge++) {
       hn->GetAxis(2)->SetRange(charge + 1, charge + 1);
@@ -1410,7 +1414,7 @@ void muonGlobalAlignmentMftMchResiduals(const char* _rootFileName = "AnalysisRes
         auto deIndex = getDEindex(deId);
         hn->GetAxis(0)->SetRange(deIndex + 1, deIndex + 1);
         TH1* proj = hn->Projection(3);
-        if (hDEResiduals[0].back()[charge]) {
+        if (hDEResiduals[1].back()[charge]) {
           hDEResiduals[1].back()[charge]->Add(proj);
           delete proj;
         } else {
@@ -1418,7 +1422,7 @@ void muonGlobalAlignmentMftMchResiduals(const char* _rootFileName = "AnalysisRes
           hDEResiduals[1].back()[charge] = proj;
         }
       }
-      auto mean = PlotDXY(hDEResiduals[0].back()[charge], c5, "residuals_groups.pdf");
+      auto mean = PlotDXY(hDEResiduals[1].back()[charge], c5, "residuals_groups.pdf");
       corrections_y << std::format("{} ({}): dy = {:0.3f} +/- {:0.3f}",
           group.first, (charge == 0 ? "positive" : "negative"), mean.first, mean.second) << std::endl;
     }
