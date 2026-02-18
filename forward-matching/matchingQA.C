@@ -27,6 +27,133 @@ TH3* GetTH3(TFile* f, TString histname)
   return result;
 }
 
+//----------------------------------------------------------------------
+
+void PlotMatchEfficiancyAndPurity(TFile* rootFile)
+{
+  std::array<std::string, 3> matchingMethods{
+    "Prod",
+    "MatchXYPhiTanl",
+    "MatchXYPhiTanlMom"};
+  std::array<std::string, 4> variables{"p", "pt", "eta", "phi"};
+
+  std::array<std::array<TH1*, variables.size()>, matchingMethods.size()> effPlots, purityPlots;
+
+  TH1* hnum;
+  TH1* hden;
+  TPaveText* title = new TPaveText(0.1, 0.4, 0.9, 0.6, "NDC");
+  TLegend* legend = new TLegend(0.15, 0.8, 0.85, 0.9);
+  legend->SetNColumns(matchingMethods.size());
+
+  //--
+  // Matching efficiency
+  //--
+  c.Clear();
+  title->Clear();
+  title->AddText("Matching efficiency");
+  title->Draw();
+  c.SaveAs("matchingQA.pdf");
+
+  for (int vi = 0; vi < variables.size(); vi++) {
+    auto variable = variables[vi];
+
+    for (int mi = 0, colorIndex = 1; mi < matchingMethods.size(); mi++, colorIndex++) {
+      auto method = matchingMethods[mi];
+      std::string path = std::string("qa-matching/matching/MC/") + method + "/matching-efficiency/";
+
+      std::string histname = path + variable + "_num";
+      hnum = GetTH1(rootFile, histname.c_str());
+      if (!hnum) {
+        std::cout << "Histogram \"" << histname << "\" not found" << std::endl;
+        continue;
+      }
+      hnum->SetLineColor(colorIndex);
+
+      histname = path + variable + "_den";
+      hden = GetTH1(rootFile, histname.c_str());
+      if (!hden) {
+        std::cout << "Histogram \"" << histname << "\" not found" << std::endl;
+        continue;
+      }
+
+      hnum->Divide(hden);
+      hnum->SetTitle(Form("Matching efficiency vs. %s", variable.c_str()));
+
+      effPlots[mi][vi] = hnum;
+    }
+  }
+
+  for (int vi = 0; vi < variables.size(); vi++) {
+    legend->Clear();
+    for (int mi = 0; mi < matchingMethods.size(); mi++) {
+      if (mi == 0) {
+        effPlots[mi][vi]->SetMinimum(0);
+        effPlots[mi][vi]->SetMaximum(1.2);
+        effPlots[mi][vi]->Draw();
+      } else {
+        effPlots[mi][vi]->Draw("same");
+      }
+      legend->AddEntry(effPlots[mi][vi], matchingMethods[mi].c_str(), "l");
+    }
+    legend->Draw();
+    c.SaveAs("matchingQA.pdf");
+  }
+
+  //--
+  // Matching purity
+  //--
+  c.Clear();
+  title->Clear();
+  title->AddText("Matching purity");
+  title->Draw();
+  c.SaveAs("matchingQA.pdf");
+
+  for (int vi = 0; vi < variables.size(); vi++) {
+    auto variable = variables[vi];
+
+    for (int mi = 0, colorIndex = 1; mi < matchingMethods.size(); mi++, colorIndex++) {
+      auto method = matchingMethods[mi];
+      std::string path = std::string("qa-matching/matching/MC/") + method + "/matching-purity/";
+
+      std::string histname = path + variable + "_num";
+      hnum = GetTH1(rootFile, histname.c_str());
+      if (!hnum) {
+        std::cout << "Histogram \"" << histname << "\" not found" << std::endl;
+        continue;
+      }
+      hnum->SetLineColor(colorIndex);
+
+      histname = path + variable + "_den";
+      hden = GetTH1(rootFile, histname.c_str());
+      if (!hden) {
+        std::cout << "Histogram \"" << histname << "\" not found" << std::endl;
+        continue;
+      }
+
+      hnum->Divide(hden);
+      hnum->SetTitle(Form("Matching purity vs. %s", variable.c_str()));
+
+      purityPlots[mi][vi] = hnum;
+    }
+  }
+
+  for (int vi = 0; vi < variables.size(); vi++) {
+    legend->Clear();
+    for (int mi = 0; mi < matchingMethods.size(); mi++) {
+      if (mi == 0) {
+        purityPlots[mi][vi]->SetMinimum(0);
+        purityPlots[mi][vi]->SetMaximum(1.2);
+        purityPlots[mi][vi]->Draw();
+      } else {
+        purityPlots[mi][vi]->Draw("same");
+      }
+      legend->AddEntry(purityPlots[mi][vi], matchingMethods[mi].c_str(), "l");
+    }
+    legend->Draw();
+    c.SaveAs("matchingQA.pdf");
+  }
+}
+
 TH1F* GetRankingFraction(TH2* rankingHist, int binNum)
 {
   TH1F* hist = new TH1F((std::string(rankingHist->GetName()) + "-ranking-fraction-" + std::to_string(binNum)).c_str(),
@@ -658,6 +785,8 @@ void matchingQA()
   c.SetLogy(kFALSE);
 
   c.Clear();
+
+  PlotMatchEfficiancyAndPurity(fAnalysisResults);
 
   PlotMatchRanking(fAnalysisResults);
 
